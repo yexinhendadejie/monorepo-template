@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "apps/server/tmp"
+[build]
+  cmd = "go build -o apps/server/tmp/server ./apps/server"
+  bin = "./apps/server/tmp/server"
+  include_ext = ["go", "mod", "sum"]
+  exclude_dir = ["node_modules", "apps/web", "apps/mockserver", "apps/server/tmp", ".git", ".pi"]
+  delay = 250
+  stop_on_error = true
+[log]
+  time = true

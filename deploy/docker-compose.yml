@@ -1,0 +1,70 @@
+# 一键启动 Recipe Body：网页 + Go API + 机台服务。
+# 用法：cd deploy && cp .env.example .env && docker compose up -d --build
+name: recipe-body
+
+services:
+  # 机台数据服务。接入真实网关后把 RECIPE_MOCK_URL 指过去，可整段删掉这个服务。
+  mock:
+    build:
+      context: ..
+      dockerfile: apps/mockserver/Dockerfile
+    environment:
+      MOCK_HOST: 0.0.0.0
+      MOCK_PORT: "3101"
+      # 机台数据不入库，挂载宿主机同步下来的目录。
+      MOCK_DATA_DIR: /data
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-text}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ../machine-data:/data:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3101/api/machines"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    environment:
+      # 运行参数全部来自挂载的 TOML，环境变量里只留配置文件位置与时区。
+      RECIPE_CONFIG: /app/config.toml
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - api-logs:/app/logs
+    depends_on:
+      mock:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  # 服务端日志落在卷里，重建容器不丢；用 docker compose logs 看容器输出，用 make logs 看这条文件日志。
+  api-logs:

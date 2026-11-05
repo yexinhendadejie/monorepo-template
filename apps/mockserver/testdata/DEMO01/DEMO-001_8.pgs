@@ -1,0 +1,11 @@
+[Document Block]
+strDutName = Demo
+[DataSheet Variable Block]
+TestFunctionCount = 1
+FUNCTION = TEST_IGSS,1,2
+    IGSS,IGSS1,1,1,-25,2,"mA;uA;nA",nA,"0.0000",1,2,"Leakage, test"
+        Vgs,Vgs,0,0,"-5","V","-6","V","Gate voltage"
+        ForceTime,ForceTime,0,0,"1","ms;us","30","ms","Forcing time"
+    IGSS,IGSS1,0,0,,,"nA",nA,"0.0000",1,0,""
+[Station Setting Block]
+Site = 1

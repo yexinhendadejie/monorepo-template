@@ -1,0 +1,33 @@
+{
+  "name": "recipe-workbench",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "apps/mockserver",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n mock,api,web 'npm run dev -w @recipe/mockserver' 'npm run dev:server' 'npm run dev -w @recipe/web'",
+    "dev:server": "go run ./apps/server",
+    "dev:air": "go tool air -c apps/server/.air.toml",
+    "test:mock": "npm test -w @recipe/mockserver",
+    "test:sync": "node --test scripts/*.test.mjs",
+    "test:go": "go test -race -cover ./...",
+    "test:web": "npm test -w @recipe/web",
+    "test": "npm run test:mock && npm run test:sync && npm run test:go && npm run test:web",
+    "typecheck": "npm run typecheck -w @recipe/web",
+    "build": "npm run build -w @recipe/web && go build -o apps/server/tmp/server ./apps/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "ftp-srv": "^4.6.3"
+  },
+  "dependencies": {
+    "basic-ftp": "^6.2.6"
+  }
+}

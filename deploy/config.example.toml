@@ -1,0 +1,35 @@
+# 生产运行配置：compose 把这个文件以只读方式挂到容器的 /app/config.toml。
+# 复制为 deploy/config.toml 后修改（deploy/config.toml 已在 .gitignore 中，不会覆盖你的改动）。
+# 环境变量仍然优先于本文件，可用 .env 临时覆盖某一项。
+
+[server]
+# 容器内必须监听 0.0.0.0，否则 nginx 反代不进来。
+host = "0.0.0.0"
+# 端口固定 8080，compose 的健康检查与 nginx 反代都指向它；改端口需同步改这两处。
+port = 8080
+# 单次机台请求超时，Go duration 格式，范围 (0, 1m]。
+timeout = "10s"
+
+[mock]
+# 机台数据服务地址。默认是 compose 里的 mock 服务；
+# 接真实网关后改成 http://真实地址:端口，并把 mock 停掉。
+url = "http://mock:3101"
+
+[database]
+# 首期读取链路不需要数据库，留空即可。
+# 接入后填 postgres://USER:PASSWORD@HOST:5432/recipebody?sslmode=disable
+url = ""
+
+[log]
+# debug | info | warn | error；排查问题时可临时改成 debug 再重启 api。
+level = "info"
+# text | json；json 便于日志系统采集。
+format = "json"
+# stdout | file | both；both 让日志同时进 docker logs 和卷内文件。
+dest = "both"
+# 容器内日志目录，对应 compose 的 api-logs 卷。
+dir = "/app/logs"
+# 单个文件超过该大小（MiB）后归档，范围 1..1024。
+rotate_mb = 10
+# 归档目录保留份数，范围 1..100。
+keep = 5

@@ -1,0 +1,19 @@
+[INFO PLAN]
+ <Test Plan Cnt>1
+ <Update>"2026/10/30"
+[/INFO PLAN]
+[TEST PLAN 1]
+ <Name>"KEL_C"
+ <Alias>"Kelvin"
+ <Test No>"T1"
+ <Code>41267
+ <Test En>0
+ <Lmt Lo>2.5
+ <Lmt Hi>3.5
+ <Lmt Lo Unit>0
+ <Lmt Hi Unit>0
+ <Lmt Lo Range>10
+ <Bias2>10000000000
+ <Time>3
+ <Time Range>6
+[/TEST PLAN 1]

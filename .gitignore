@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+.pi/
+.env
+.env.*
+!.env.example
+.DS_Store
+apps/server/tmp/
+apps/server/config.toml
+machine-data/*
+!machine-data/README.md
+tmp/
+logs/
+*.out
+*.log
+
+# 部署机的运行配置由 deploy/config.example.toml 复制生成
+deploy/config.toml

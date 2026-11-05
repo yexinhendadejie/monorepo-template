@@ -1,0 +1,19 @@
+# 构建时不进入镜像的内容：依赖、日志、本机数据与本地配置。
+**/node_modules
+.git
+.github
+.pi
+logs
+tmp
+**/tmp
+**/coverage
+machine-data
+deploy/.env
+deploy/.env.*
+!deploy/.env.example
+deploy/config.toml
+apps/server/config.toml
+apps/server/logs
+apps/web/dist
+*.md
+!deploy/README.md
