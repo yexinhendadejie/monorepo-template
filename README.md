@@ -12,7 +12,7 @@
 - `packages/ui`：shadcn/ui 风格的共享基础组件。
 - `packages/logging`：Go 结构化日志，负责等级、格式、输出目标与按大小归档。
 - `machine-data/`：云盘同步下来的机台原始数据，只存本地，除 README 外全部被忽略；机台模拟服务默认读这里。
-- `scripts/sync-machine-data.mjs`：机台数据同步脚本，当前协议为 FTP。
+- `scripts/sync-machine-data.mjs`：从操作系统已连接的 SMB 公盘增量同步机台数据。
 - `deploy/`：生产部署单元，Docker Compose 一键起 web + api + 机台服务。
 
 ## 本地运行
@@ -51,15 +51,23 @@ docker compose up -d --build
 
 ## 机台数据同步
 
-机台数据不入库。复制 `.env.example` 为 `.env` 并填写 `FTP_HOST`（可选 `FTP_PORT`、`FTP_USER`、`FTP_PASSWORD`、`FTP_PATH`、`FTP_SECURE`），然后：
+机台数据不入库。生产公盘为 SMB 共享 `\\10.128.0.21\d`。同步脚本读取操作系统已连接的共享目录，认证由操作系统处理，不保存账号密码，也不再使用 `FTP_*` 配置。
+
+Windows 先在资源管理器打开 `\\10.128.0.21\d`，如提示登录，请向公盘管理员获取账号、密码及可能的域信息。脚本默认读取该 UNC 路径；如果配方位于子目录，设置 `SMB_SOURCE_DIR` 指向该子目录。运行同步任务的用户必须具备相应共享和文件读取权限；资源管理器当前用户的登录状态不一定适用于计划任务或服务账号。Windows 可在 PowerShell 中设置 `$env:SMB_SOURCE_DIR='\\10.128.0.21\d\实际机台目录'`，再运行 `node scripts/sync-machine-data.mjs --dry-run`；无需安装 make。
+
+Linux/macOS 先通过操作系统挂载共享盘，再将仓库根目录 `.env` 中的 `SMB_SOURCE_DIR` 设置为挂载后的机台目录。Linux 例如 `/mnt/recipe-share`，macOS 例如 `/Volumes/d`。源目录的直接子目录应为机台编号；`d` 是共享名，实际机台文件所在子目录仍需确认。部署机同步还需要 Node.js 22+；Docker Compose 本身不会连接 SMB，也不会定时同步。
 
 ```bash
-make sync         # 下载到 machine-data/，未变化的文件按大小与修改时间跳过
-make sync-dry     # 只列出将要下载的文件
-make sync-prune   # 额外清理云盘上已不存在的本地文件
+make sync         # 复制到 machine-data/，未变化的文件按大小与修改时间跳过
+make sync-dry     # 只列出将要复制的文件
+make sync-prune   # 额外清理公盘上已不存在的本地文件
 ```
 
-同步会保留远端修改时间、拒绝越出 `machine-data/` 的路径、跳过 `.DS_Store` 等系统垃圾文件，并以临时文件加改名的方式保证不留下半截配方。云盘协议目前是 FTP，后续更换时只需替换 `scripts/sync-machine-data.mjs` 中的连接与列目录部分，`make sync` 的用法保持不变。
+同步保留源文件修改时间、拒绝越出数据目录的路径、忽略符号链接和系统垃圾文件，并通过临时文件加改名写入配方。无法访问共享目录时直接失败，空源目录拒绝执行清理，避免挂载失效时清空本地缓存。共享目录与本地目标不能相同或互相包含。同步期间请避免其他进程同时修改源目录或目标目录；不要并发运行多个同步任务。
+
+Linux 可安装系统的 CIFS 挂载工具，使用 `//10.128.0.21/d` 作为挂载源，以只读方式挂载到 `/mnt/recipe-share`。账号密码未知时请先确认是否允许访客访问；需要认证则向管理员申请只读账号，使用系统凭据文件或凭据管理器保存，凭据文件仅允许所属用户读取，不要将密码写进仓库、命令行或日志。macOS 可在 Finder 的“连接服务器”输入 `smb://10.128.0.21/d`，使用系统登录和钥匙串完成连接。定时任务运行前应检查 SMB 挂载仍存在且可读。
+
+同步日志复用 Node 日志入口，遵循 `LOG_LEVEL`、`LOG_FORMAT`，输出到 stdout，记录 `sync_started`、`sync_file_planned`、`sync_file_copied`、`sync_completed`、`sync_failed` 等事件及文件数、字节数、耗时，不记录配方内容或认证凭据。单文件复制记录为 debug，完成摘要为 info，失败为 error；该脚本不自行管理日志文件或轮转，生产由调度器或日志采集服务保存输出。
 
 ## 配置
 

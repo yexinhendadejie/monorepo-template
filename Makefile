@@ -109,9 +109,8 @@ smoke:
 	@printf 'machine-data '; ls machine-data 2>/dev/null | wc -l | tr -d ' '; echo ' 项（make sync 拉取）'
 	@printf 'mock     '; curl -fsS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:$(MOCK_PORT)/api/machines
 
-## sync: 从云盘同步机台数据到 machine-data/
+## sync: 从已连接的 SMB 公盘同步机台数据到 machine-data/
 sync:
-	@test -n "$$FTP_HOST" || { echo "缺少 FTP_HOST：复制 .env.example 为 .env 并填写云盘地址"; exit 1; }
 	node scripts/sync-machine-data.mjs
 
 ## sync-dry: 只预览将要同步的机台文件

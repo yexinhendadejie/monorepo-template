@@ -24,10 +24,6 @@
     "build": "npm run build -w @recipe/web && go build -o apps/server/tmp/server ./apps/server"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
-    "ftp-srv": "^4.6.3"
-  },
-  "dependencies": {
-    "basic-ftp": "^6.2.6"
+    "concurrently": "^9.2.1"
   }
 }

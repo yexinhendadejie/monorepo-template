@@ -1,6 +1,6 @@
 # 生产部署
 
-这个目录是一套可复制的部署单元：网页、Go API、机台数据服务打包成镜像，`docker compose up` 一键起栈。宿主机只需要 Docker 与 Compose v2，不需要装 Node 或 Go。
+这个目录是一套可复制的部署单元：网页、Go API、机台数据服务打包成镜像，`docker compose up` 一键起栈。运行容器只需要 Docker 与 Compose v2；如果在宿主机执行机台数据同步，还需 Node.js 22+ 和操作系统的 SMB 共享访问能力。
 
 ## 首次启动
 
@@ -14,6 +14,8 @@ docker compose up -d --build
 浏览器打开 `http://<主机>:8088`（端口取 `.env` 的 `WEB_PORT`）。`docker compose ps` 三个服务都应是 healthy。
 
 机台数据不入库，mock 挂载的是宿主机仓库根目录的 `machine-data/`：部署机上先执行一次 `make sync`，或把 `config.toml` 的 `[mock] url` 指向真实机台网关并停掉 mock。没有数据时页面能打开，但机台列表是空的。
+
+公盘协议为 SMB，地址 `\\10.128.0.21\d`。Linux 部署机先将 `//10.128.0.21/d` 以只读方式挂载到例如 `/mnt/recipe-share`，再在仓库根目录 `.env`（不是 `deploy/.env`）设置 `SMB_SOURCE_DIR=/mnt/recipe-share`，回到根目录执行 `make sync-dry` 确认机台目录，再执行 `make sync`。如果机台数据在共享盘子目录，配置应指向该子目录。Windows 可复用系统已登录的 UNC 共享；Linux/macOS 必须使用挂载后的路径。账号密码未知时向公盘管理员确认访客权限或申请只读账号，凭据交给系统管理，不存入仓库。Compose 不负责 SMB 挂载和定时同步，定时任务应以有共享访问权限的用户运行。完整说明见根目录 README 的“机台数据同步”。
 
 ## 日常更新
 
