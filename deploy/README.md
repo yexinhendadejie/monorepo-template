@@ -26,7 +26,7 @@ git pull
 docker compose up -d --build
 ```
 
-Compose 会重建有变化的镜像并滚动替换容器；数据卷 `api-logs` 保留。
+Compose 会重建有变化的镜像并滚动替换容器；数据卷 `api-logs` 保留。只重建 api 时不需要额外重启 web：`deploy/nginx.conf` 用 `resolver` 跟随 Docker DNS，api 换地址后几秒内就会用新地址。反过来，`nginx.conf` 是构建期打进镜像的，改完必须带 `--build`（`docker compose up -d --build web`）才会生效。
 
 ## 组成
 
@@ -87,6 +87,7 @@ curl -s http://127.0.0.1:8088/healthz
 ```
 
 - 8088 打不开：先看 `docker compose ps`，web 不 healthy 时 `docker compose logs web` 通常是 nginx 反代不上游。
+- 更新后 `/api/` 返回 502、但 `docker compose exec api wget -qO- http://127.0.0.1:8080/healthz` 正常：nginx 还在用 api 的旧地址，`docker compose restart web` 立刻恢复；如果刚改过 `deploy/nginx.conf`，要先 `docker compose up -d --build web` 让它进镜像。
 - api 起不来且日志提示 `cannot read /app/config.toml`：缺少 `deploy/config.toml`，按上面的步骤从模板复制。
 - 页面能开但列表报“机台服务暂时不可用”：api 到 mock 的网络或 `config.toml` 里的 `[mock] url` 写错，用 `docker compose exec api wget -qO- http://mock:3101/api/machines` 验证。
 - 机台列表为空：`machine-data/` 没有数据，部署机上 `make sync` 后 `docker compose restart mock`；也可以直接 `docker compose exec mock ls /data` 确认挂载。
